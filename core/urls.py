@@ -12,4 +12,5 @@ urlpatterns = [
     path("student/assignments/", views.StudentAssignmentList.as_view()),
     path("submissions/", views.SubmissionListCreate.as_view()),
     path("submissions/<int:pk>/", views.SubmissionDetail.as_view()),
+    path("run-tests/", views.RunTests.as_view()),
 ]

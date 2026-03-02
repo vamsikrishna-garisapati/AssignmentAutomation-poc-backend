@@ -54,3 +54,46 @@ class AssignmentGenerateAPITest(TestCase):
         )
         self.assertEqual(response.status_code, 503)
         self.assertIn("OPENROUTER", response.json().get("detail", ""))
+
+
+class SubmissionGraderTest(TestCase):
+    """Phase 4: submission flow uses GraderRouter (no Judge0 required for react)."""
+
+    def setUp(self):
+        from core.constants import POC_MENTOR_ID, POC_STUDENT_ID
+        from core.models import User, Assignment
+
+        self.client = APIClient()
+        User.objects.create(id=POC_MENTOR_ID, username="mentor", role="mentor")
+        User.objects.create(id=POC_STUDENT_ID, username="student", role="student")
+        self.assignment = Assignment.objects.create(
+            mentor_id=POC_MENTOR_ID,
+            title="React Test",
+            assignment_type="react",
+            difficulty="easy",
+            description="Test",
+            requirements=["use useState", "return div"],
+            starter_code={},
+            public_tests=[],
+            hidden_tests=[],
+            grading_rubric={"correctness": 60, "code_quality": 20, "edge_cases": 20},
+        )
+
+    def test_submission_returns_grader_results(self):
+        response = self.client.post(
+            "/api/submissions/",
+            {
+                "assignment_id": self.assignment.id,
+                "code": "",
+                "files": {"/App.js": "import { useState } from 'react'; const App = () => { return <div>Hi</div>; }; export default App;"},
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertEqual(data["status"], "completed")
+        self.assertIn("score", data)
+        self.assertIsInstance(data.get("score"), (int, float))
+        self.assertIn("test_results", data)
+        self.assertIn("passed_tests", data["test_results"])
+        self.assertIn("total_tests", data["test_results"])

@@ -18,6 +18,8 @@ from .serializers import (
     TopicSerializer,
 )
 from services.ai_service import OpenRouterAIService
+from services.grader_router import GraderRouter
+from services.judge0_service import Judge0Error, Judge0Service
 
 
 def health(request):
@@ -150,10 +152,22 @@ class SubmissionListCreate(APIView):
             files=data.get("files"),
             status="grading",
         )
+        assignment = submission.assignment
+        try:
+            result = GraderRouter().grade(submission, assignment)
+            submission.score = result["score"]
+            submission.test_results = result["test_results"]
+            submission.ai_feedback = result["ai_feedback"]
+        except (Judge0Error, Exception) as e:
+            submission.score = 0.0
+            submission.test_results = {
+                "error": str(e),
+                "passed_tests": 0,
+                "total_tests": 1,
+                "results": [],
+            }
+            submission.ai_feedback = None
         submission.status = "completed"
-        submission.score = 0.0
-        submission.test_results = {"stub": True}
-        submission.ai_feedback = {"summary": "Stub; real grading in Phase 4"}
         submission.save()
         return Response(
             SubmissionDetailSerializer(submission).data,
@@ -172,3 +186,35 @@ class SubmissionDetail(APIView):
         submission = self.get_object(pk)
         serializer = SubmissionDetailSerializer(submission)
         return Response(serializer.data)
+
+
+class RunTests(APIView):
+    def post(self, request):
+        code = request.data.get("code")
+        if code is None:
+            return Response(
+                {"detail": "code is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        assignment_id = request.data.get("assignment_id")
+        test_cases = request.data.get("test_cases")
+        if assignment_id is not None:
+            try:
+                assignment = Assignment.objects.get(pk=assignment_id)
+            except Assignment.DoesNotExist:
+                return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
+            test_cases = test_cases or assignment.public_tests or assignment.hidden_tests or []
+        if not test_cases:
+            return Response(
+                {"detail": "Provide assignment_id or test_cases."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            service = Judge0Service()
+            result = service.execute_code(code=code, language_id=71, test_cases=test_cases)
+            return Response(result)
+        except Judge0Error as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
