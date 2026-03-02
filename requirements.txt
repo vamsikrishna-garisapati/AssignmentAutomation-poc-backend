@@ -1,0 +1,7 @@
+Django>=4.2,<5
+djangorestframework>=3.14
+psycopg2-binary>=2.9
+django-cors-headers>=4.3
+requests>=2.31
+beautifulsoup4>=4.12
+python-dotenv>=1.0
