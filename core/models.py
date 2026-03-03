@@ -7,22 +7,28 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=ROLES)
 
 
+ASSIGNMENT_TYPES = [
+    ("react", "React"),
+    ("sql", "SQL"),
+    ("python", "Python"),
+    ("html_css", "HTML/CSS"),
+]
+
+
 class Topic(models.Model):
     name = models.CharField(max_length=100)
     category = models.CharField(max_length=50)
     difficulty_level = models.IntegerField(default=1)
+    assignment_type = models.CharField(
+        max_length=20, choices=ASSIGNMENT_TYPES, default="python"
+    )
 
     def __str__(self):
         return self.name
 
 
 class Assignment(models.Model):
-    TYPES = [
-        ("react", "React"),
-        ("sql", "SQL"),
-        ("python", "Python"),
-        ("html_css", "HTML/CSS"),
-    ]
+    TYPES = ASSIGNMENT_TYPES
     mentor = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     assignment_type = models.CharField(max_length=20, choices=TYPES)

@@ -19,7 +19,7 @@ Django REST backend for the Assignment Automation POC. No auth; uses seeded defa
 
 3. Copy `.env.example` to `.env` and fill in values:
    - **Required**: `SECRET_KEY`
-   - **AI generation**: `OPENROUTER_API_KEY` (for POST /api/assignments/generate/)
+   - **AI generation**: `GEMINI_API_KEY` (for POST /api/assignments/generate/)
    - **Python grading**: `JUDGE0_API_URL` and `JUDGE0_API_KEY` (for running Python code via Judge0)
    - **PostgreSQL** (optional): set `DATABASE_URL`. If unset, SQLite (`db.sqlite3`) is used.
 
@@ -114,7 +114,7 @@ Django REST backend for the Assignment Automation POC. No auth; uses seeded defa
 
 1. **GET /api/health/** → 200, `{"status": "ok"}`
 2. **GET /api/topics/** → 200, list of topics (after seed)
-3. (Optional) **POST /api/assignments/generate/** with valid body and `OPENROUTER_API_KEY` → 200, generated assignment JSON
+3. (Optional) **POST /api/assignments/generate/** with valid body and `GEMINI_API_KEY` → 200, generated assignment JSON
 4. **POST /api/assignments/** with full body → 201, created assignment
 5. **POST /api/assignments/{id}/assign/** with `student_ids: [2]` → 200
 6. **GET /api/student/assignments/** → 200, list includes assigned assignment

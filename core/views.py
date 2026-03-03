@@ -1,3 +1,5 @@
+import logging
+
 import requests
 from django.http import JsonResponse
 from rest_framework import status
@@ -17,7 +19,7 @@ from .serializers import (
     SubmissionDetailSerializer,
     TopicSerializer,
 )
-from services.ai_service import OpenRouterAIService
+from services.ai_service import GeminiAIService
 from services.grader_router import GraderRouter
 from services.judge0_service import Judge0Error, Judge0Service
 
@@ -29,6 +31,9 @@ def health(request):
 class TopicList(APIView):
     def get(self, request):
         queryset = Topic.objects.all()
+        assignment_type = request.query_params.get("assignment_type", "").strip().lower()
+        if assignment_type and assignment_type in ("react", "sql", "python", "html_css"):
+            queryset = queryset.filter(assignment_type=assignment_type)
         serializer = TopicSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -56,22 +61,30 @@ class AssignmentGenerate(APIView):
             )
 
         topics = list(Topic.objects.filter(id__in=[x for x in topic_ids if isinstance(x, int)]))
-        service = OpenRouterAIService()
+        sub_topic = (request.data.get("sub_topic") or "").strip() or None
+        additional_information = (request.data.get("additional_information") or "").strip() or None
+        service = GeminiAIService()
         if not service.api_key:
             return Response(
-                {"detail": "OPENROUTER_API_KEY is not configured"},
+                {"detail": "GEMINI_API_KEY is not configured"},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
         try:
-            data = service.generate_assignment(topics, difficulty, assignment_type)
+            data = service.generate_assignment(
+                topics, difficulty, assignment_type,
+                sub_topic=sub_topic,
+                additional_information=additional_information,
+            )
         except ValueError as e:
+            logging.warning("AssignmentGenerate ValueError: %s", e)
             return Response(
                 {"detail": str(e)},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         except requests.RequestException as e:
+            logging.warning("AssignmentGenerate Gemini error: %s", e)
             return Response(
-                {"detail": f"OpenRouter API error: {e}"},
+                {"detail": f"Gemini API error: {e}"},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         return Response(data)
@@ -169,6 +182,10 @@ class SubmissionListCreate(APIView):
             submission.ai_feedback = None
         submission.status = "completed"
         submission.save()
+        StudentAssignment.objects.filter(
+            assignment=submission.assignment,
+            student_id=POC_STUDENT_ID,
+        ).update(completed=True)
         return Response(
             SubmissionDetailSerializer(submission).data,
             status=status.HTTP_201_CREATED,

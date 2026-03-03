@@ -53,7 +53,7 @@ class AssignmentGenerateAPITest(TestCase):
             format="json",
         )
         self.assertEqual(response.status_code, 503)
-        self.assertIn("OPENROUTER", response.json().get("detail", ""))
+        self.assertIn("GEMINI", response.json().get("detail", ""))
 
 
 class SubmissionGraderTest(TestCase):

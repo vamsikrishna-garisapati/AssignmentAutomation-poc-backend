@@ -1,0 +1,35 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env/
+.venv/
+venv/
+env/
+
+# Local environment files and secrets
+.env
+
+# SQLite database (local dev)
+db.sqlite3
+db.sqlite3-journal
+
+# Logs
+*.log
+
+# IDE / editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python packaging / build artifacts
+build/
+dist/
+*.egg-info/
+
+# Django static and media (if collected locally)
+staticfiles/
+media/
+

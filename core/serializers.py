@@ -1,12 +1,13 @@
 from rest_framework import serializers
 
 from .models import Assignment, StudentAssignment, Submission, Topic
+from services.grader_router import DEFAULT_SQL_DB_SETUP, get_schema_summary
 
 
 class TopicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Topic
-        fields = ["id", "name", "category", "difficulty_level"]
+        fields = ["id", "name", "category", "difficulty_level", "assignment_type"]
 
 
 class AssignmentListSerializer(serializers.ModelSerializer):
@@ -56,6 +57,7 @@ class AssignmentCreateSerializer(serializers.ModelSerializer):
 
 class AssignmentDetailSerializer(serializers.ModelSerializer):
     topics = TopicSerializer(many=True, read_only=True)
+    table_schema = serializers.SerializerMethodField()
 
     class Meta:
         model = Assignment
@@ -71,16 +73,34 @@ class AssignmentDetailSerializer(serializers.ModelSerializer):
             "hidden_tests",
             "grading_rubric",
             "topics",
+            "table_schema",
             "created_at",
         ]
+
+    def get_table_schema(self, obj):
+        if obj.assignment_type != "sql":
+            return None
+        db_setup = (obj.starter_code or {}).get("db_setup", "") or ""
+        if not db_setup.strip():
+            db_setup = DEFAULT_SQL_DB_SETUP
+        return get_schema_summary(db_setup) or None
 
 
 class StudentAssignmentSerializer(serializers.ModelSerializer):
     assignment = AssignmentListSerializer(read_only=True)
+    completed = serializers.SerializerMethodField()
 
     class Meta:
         model = StudentAssignment
         fields = ["id", "assignment", "assigned_at", "due_date", "completed"]
+
+    def get_completed(self, obj):
+        if obj.completed:
+            return True
+        return Submission.objects.filter(
+            assignment=obj.assignment,
+            student=obj.student,
+        ).exists()
 
 
 class SubmissionCreateSerializer(serializers.Serializer):

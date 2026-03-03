@@ -54,17 +54,23 @@ class Command(BaseCommand):
             self.style.SUCCESS(f"{'Created' if created else 'Updated'} student (id={POC_STUDENT_ID})")
         )
 
-        # Topics
+        # Topics (assignment_type filters which topics show per type on mentor generate)
         topics_data = [
-            {"name": "React Hooks", "category": "Frontend", "difficulty_level": 2},
-            {"name": "SQL Joins", "category": "Database", "difficulty_level": 2},
-            {"name": "Python Basics", "category": "Backend", "difficulty_level": 1},
-            {"name": "HTML/CSS Layout", "category": "Frontend", "difficulty_level": 1},
+            {"name": "React Hooks", "category": "Frontend", "difficulty_level": 2, "assignment_type": "react"},
+            {"name": "Components", "category": "Frontend", "difficulty_level": 1, "assignment_type": "react"},
+            {"name": "SQL Joins", "category": "Database", "difficulty_level": 2, "assignment_type": "sql"},
+            {"name": "Python Basics", "category": "Backend", "difficulty_level": 1, "assignment_type": "python"},
+            {"name": "Loops", "category": "Backend", "difficulty_level": 1, "assignment_type": "python"},
+            {"name": "HTML/CSS Layout", "category": "Frontend", "difficulty_level": 1, "assignment_type": "html_css"},
         ]
         for t in topics_data:
-            topic, created = Topic.objects.get_or_create(
+            topic, created = Topic.objects.update_or_create(
                 name=t["name"],
-                defaults={"category": t["category"], "difficulty_level": t["difficulty_level"]},
+                defaults={
+                    "category": t["category"],
+                    "difficulty_level": t["difficulty_level"],
+                    "assignment_type": t["assignment_type"],
+                },
             )
             if created:
                 self.stdout.write(self.style.SUCCESS(f"Created topic: {topic.name}"))
