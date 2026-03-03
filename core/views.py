@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 import requests
 from django.http import JsonResponse
@@ -92,9 +93,18 @@ class AssignmentGenerate(APIView):
 
 class AssignmentListCreate(APIView):
     def get(self, request):
-        queryset = Assignment.objects.filter(mentor_id=POC_MENTOR_ID).order_by("-created_at")
-        serializer = AssignmentListSerializer(queryset, many=True)
-        return Response(serializer.data)
+        try:
+            queryset = Assignment.objects.filter(mentor_id=POC_MENTOR_ID).order_by("-created_at")
+            serializer = AssignmentListSerializer(queryset, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logging.exception("AssignmentListCreate GET failed: %s\n%s", e, traceback.format_exc())
+            from django.conf import settings
+            detail = str(e) if getattr(settings, "DEBUG", False) else "Internal server error"
+            return Response(
+                {"detail": detail},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     def post(self, request):
         serializer = AssignmentCreateSerializer(data=request.data)
