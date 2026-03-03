@@ -15,7 +15,11 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-poc-change-in-production")
 
 DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -92,6 +96,16 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+# Where collectstatic will put files in production (e.g. on Render)
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Optional: allow Django to know it's behind a proxy (e.g. Render)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# CSRF trusted origins (for browser clients) – configure via env if needed
+_csrf_origins = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+if _csrf_origins:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(",") if o.strip()]
 
 # CORS: allow all origins for POC (e.g. Next.js on localhost:3000)
 CORS_ALLOW_ALL_ORIGINS = True
