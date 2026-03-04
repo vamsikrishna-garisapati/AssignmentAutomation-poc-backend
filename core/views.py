@@ -107,13 +107,22 @@ class AssignmentListCreate(APIView):
             )
 
     def post(self, request):
-        serializer = AssignmentCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        assignment = serializer.save(mentor_id=POC_MENTOR_ID)
-        return Response(
-            AssignmentDetailSerializer(assignment).data,
-            status=status.HTTP_201_CREATED,
-        )
+        try:
+            serializer = AssignmentCreateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            assignment = serializer.save(mentor_id=POC_MENTOR_ID)
+            return Response(
+                AssignmentDetailSerializer(assignment).data,
+                status=status.HTTP_201_CREATED,
+            )
+        except Exception as e:
+            logging.exception("AssignmentListCreate POST failed: %s\n%s", e, traceback.format_exc())
+            from django.conf import settings
+            detail = str(e) if getattr(settings, "DEBUG", False) else "Internal server error"
+            return Response(
+                {"detail": detail},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class AssignmentDetail(APIView):
